@@ -119,6 +119,9 @@ function list(){
   app.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{state={...state,view:"book",mentor:MENTORS.find(m=>m.id===b.dataset.m),slot:null,error:""};render();window.scrollTo(0,0)});
 }
 
+const $f=id=>document.getElementById(id);
+function keepForm(){return {n:$f("name").value,e:$f("email").value,t:$f("topic").value}}
+function restoreForm(k){$f("name").value=k.n;$f("email").value=k.e;$f("topic").value=k.t}
 function book(){
   const m=state.mentor;
   app.innerHTML=`<p><button class="btn ghost" id="back">Back</button></p>
@@ -135,16 +138,16 @@ function book(){
   </div>`;
   document.getElementById("back").onclick=()=>{state.view="list";render()};
   app.querySelectorAll(".slot").forEach(b=>b.onclick=()=>{state.slot={key:b.dataset.k,label:b.dataset.l,time:b.dataset.t};
-    const keep={n:name.value,e:email.value,t:topic.value};book();name.value=keep.n;email.value=keep.e;topic.value=keep.t});
+    const keep=keepForm();book();restoreForm(keep)});
   document.getElementById("confirm").onclick=()=>{
-    const n=name.value.trim(),e=email.value.trim(),t=topic.value.trim();
+    const n=$f("name").value.trim(),e=$f("email").value.trim(),t=$f("topic").value.trim();
     let err="";
     if(!state.slot)err="Pick a time first.";
     else if(!n)err="Enter your name.";
     else if(!/^\S+@\S+\.\S+$/.test(e))err="Enter a valid email address.";
     else if(!t)err="Tell the mentor briefly what you want help with.";
     else if(taken(m.id,state.slot.key,state.slot.time))err="That time was just taken. Pick another.";
-    if(err){state.error=err;const keep={n:name.value,e:email.value,t:topic.value};book();name.value=keep.n;email.value=keep.e;topic.value=keep.t;return}
+    if(err){state.error=err;const keep=keepForm();book();restoreForm(keep);return}
     const rec={mentorId:m.id,mentorName:m.name,date:state.slot.key,dateLabel:state.slot.label,time:state.slot.time,student:n,email:e,topic:t};
     bookings=[...bookings,rec];save(bookings);state={...state,view:"done",mentor:m,slot:null,last:rec,error:""};render();window.scrollTo(0,0);
   };
@@ -154,7 +157,8 @@ function done(){
   const r=state.last;
   app.innerHTML=`<div class="panel ok"><h1>You’re booked</h1>
     <p>${esc(r.student)}, your call with <b>${esc(r.mentorName)}</b> is on <b>${esc(r.dateLabel)} at ${esc(r.time)} IST</b>.</p>
-    <p class="meta">A confirmation would be sent to ${esc(r.email)}. Your mentor will share the video link before the call.</p>
+    <div class="card" style="border-left:5px solid var(--accent)"><b>What happens next</b>
+      <div>Your mentor will send the meeting link to your registered email address, <b>${esc(r.email)}</b>, before the call. Please keep an eye on your inbox, including spam.</div></div>
     <div><b>What you asked about</b><div class="meta">${esc(r.topic)}</div></div>
     <div class="row"><button class="btn" id="again">Book another call</button></div></div>`;
   document.getElementById("again").onclick=()=>{state={view:"problem",problem:""};render()};
